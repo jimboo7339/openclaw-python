@@ -6,7 +6,7 @@ on:
   
   # 每周一自动构建（检查基础镜像更新）
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: cron: '0 * * * *'
   
   # 推送 tag 时触发
   push:
