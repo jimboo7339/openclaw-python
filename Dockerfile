@@ -3,6 +3,9 @@
 
 FROM 1panel/openclaw:latest
 
+# 切换到 root 用户以确保有权限安装包
+USER root
+
 # 使用国内镜像源加速apt下载
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
@@ -11,4 +14,4 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     rm -rf /var/lib/apt/lists/*
 
 # 保持原镜像的入口点
-ENTRYPOINT ["node", "dist/index.js"]
+# ENTRYPOINT ["node", "dist/index.js"]
