@@ -5,7 +5,7 @@
 ## 镜像地址
 
 ```
-docker pull jimboo/openclaw-python:latest
+docker pull jimboo7339/openclaw-python:latest
 ```
 
 ## 与官方镜像的区别
@@ -25,7 +25,7 @@ docker pull jimboo/openclaw-python:latest
 services:
   openclaw:
     container_name: openclaw
-    image: jimboo/openclaw-python:latest
+    image: jimboo7339/openclaw-python:latest
     restart: always
     environment:
       HOME: /home/node
@@ -56,4 +56,4 @@ docker-compose up -d
 ## 相关链接
 
 - [OpenClaw 官方文档](https://docs.openclaw.ai)
-- [Docker Hub](https://hub.docker.com/r/jimboo/openclaw-python)
+- [Docker Hub](https://hub.docker.com/r/jimboo7339/openclaw-python)

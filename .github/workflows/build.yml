@@ -17,7 +17,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/openclaw-python
+  IMAGE_NAME: jimboo7339/openclaw-python
 
 jobs:
   build:
