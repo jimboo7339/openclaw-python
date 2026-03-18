@@ -7,13 +7,6 @@ on:
   # 每小时检查基础镜像更新
   schedule:
     - cron: '0 * * * *'
-  
-  # 推送 tag 时触发
-  push:
-    tags:
-      - 'v*'
-    branches:
-      - main
 
 env:
   REGISTRY: docker.io
