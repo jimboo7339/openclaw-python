@@ -4,7 +4,7 @@ on:
   # 手动触发
   workflow_dispatch:
   
-  # 每周一自动构建（检查基础镜像更新）
+  # 每小时检查基础镜像更新
   schedule:
     - cron: '0 * * * *'
   
@@ -18,9 +18,64 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: jimboo7339/openclaw-python
+  BASE_IMAGE: 1panel/openclaw:latest
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+      base_digest: ${{ steps.check.outputs.base_digest }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check base image update
+        id: check
+        run: |
+          # 获取上次记录的 digest
+          LOCAL_DIGEST=""
+          if [ -f .last_base_digest ]; then
+            LOCAL_DIGEST=$(cat .last_base_digest)
+          fi
+          
+          # 获取远程基础镜像的 digest（使用 docker manifest）
+          echo "Checking base image: ${{ env.BASE_IMAGE }}"
+          
+          # 使用 skopeo 或 docker manifest 获取 digest
+          docker pull ${{ env.BASE_IMAGE }} >/dev/null 2>&1 || true
+          REMOTE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.BASE_IMAGE }} 2>/dev/null | cut -d'@' -f2)
+          
+          # 如果获取失败，使用另一种方式
+          if [ -z "$REMOTE_DIGEST" ]; then
+            REMOTE_DIGEST=$(docker manifest inspect ${{ env.BASE_IMAGE }} 2>/dev/null | sha256sum | awk '{print $1}')
+          fi
+          
+          echo "Local digest: $LOCAL_DIGEST"
+          echo "Remote digest: $REMOTE_DIGEST"
+          echo "base_digest=$REMOTE_DIGEST" >> $GITHUB_OUTPUT
+          
+          if [ "$LOCAL_DIGEST" = "$REMOTE_DIGEST" ] && [ -n "$LOCAL_DIGEST" ]; then
+            echo "Base image not changed, skipping build"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Base image changed or first run, will build"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save digest
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          echo "${{ steps.check.outputs.base_digest }}" > .last_base_digest
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .last_base_digest
+          git diff --staged --quiet || git commit -m "Update base image digest: ${{ steps.check.outputs.base_digest }}"
+          git push
+
   build:
+    needs: check
+    if: needs.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
