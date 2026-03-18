@@ -21,14 +21,22 @@ env:
   BASE_IMAGE: 1panel/openclaw:latest
 
 jobs:
-  check:
+  check-and-build:
     runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.check.outputs.changed }}
-      base_digest: ${{ steps.check.outputs.base_digest }}
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Restore base image digest cache
+        id: cache-digest
+        uses: actions/cache@v3
+        with:
+          path: .last_base_digest
+          key: base-digest-${{ runner.os }}
 
       - name: Check base image update
         id: check
@@ -39,19 +47,19 @@ jobs:
             LOCAL_DIGEST=$(cat .last_base_digest)
           fi
           
-          # 获取远程基础镜像的 digest（使用 docker manifest）
-          echo "Checking base image: ${{ env.BASE_IMAGE }}"
+          echo "Local digest: $LOCAL_DIGEST"
           
-          # 使用 skopeo 或 docker manifest 获取 digest
+          # 获取远程基础镜像的 digest
+          echo "Checking base image: ${{ env.BASE_IMAGE }}"
           docker pull ${{ env.BASE_IMAGE }} >/dev/null 2>&1 || true
           REMOTE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ env.BASE_IMAGE }} 2>/dev/null | cut -d'@' -f2)
           
-          # 如果获取失败，使用另一种方式
+          # 如果获取失败，使用 manifest 方式
           if [ -z "$REMOTE_DIGEST" ]; then
+            echo "Trying manifest inspect..."
             REMOTE_DIGEST=$(docker manifest inspect ${{ env.BASE_IMAGE }} 2>/dev/null | sha256sum | awk '{print $1}')
           fi
           
-          echo "Local digest: $LOCAL_DIGEST"
           echo "Remote digest: $REMOTE_DIGEST"
           echo "base_digest=$REMOTE_DIGEST" >> $GITHUB_OUTPUT
           
@@ -61,40 +69,30 @@ jobs:
           else
             echo "Base image changed or first run, will build"
             echo "changed=true" >> $GITHUB_OUTPUT
+            # 保存新的 digest
+            echo "$REMOTE_DIGEST" > .last_base_digest
           fi
 
-      - name: Save digest
+      - name: Save base image digest cache
         if: steps.check.outputs.changed == 'true'
-        run: |
-          echo "${{ steps.check.outputs.base_digest }}" > .last_base_digest
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .last_base_digest
-          git diff --staged --quiet || git commit -m "Update base image digest: ${{ steps.check.outputs.base_digest }}"
-          git push
-
-  build:
-    needs: check
-    if: needs.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/cache@v3
+        with:
+          path: .last_base_digest
+          key: base-digest-${{ runner.os }}-${{ steps.check.outputs.base_digest }}
 
       - name: Set up Docker Buildx
+        if: steps.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: steps.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract metadata
+        if: steps.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -105,6 +103,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
+        if: steps.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -116,6 +115,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Update Docker Hub README
+        if: steps.check.outputs.changed == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: peter-evans/dockerhub-description@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
