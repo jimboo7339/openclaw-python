@@ -6,8 +6,8 @@ FROM ghcr.io/openclaw/openclaw:latest
 # 切换到 root 用户以确保有权限安装包
 USER root
 
-# 安装 Python requests 模块
-RUN apt-get update && apt-get install -y python3-requests && rm -rf /var/lib/apt/lists/*
+# 安装 Python requests 模块和 ffmpeg
+RUN apt-get update && apt-get install -y python3-requests ffmpeg && rm -rf /var/lib/apt/lists/*
 
 USER node
 
