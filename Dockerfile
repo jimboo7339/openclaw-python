@@ -1,7 +1,7 @@
 # OpenClaw with Python Support
 # Based on 1panel/openclaw:latest with python3-requests installed
 
-FROM 1panel/openclaw:latest
+FROM ghcr.io/openclaw/openclaw:latest
 
 # 切换到 root 用户以确保有权限安装包
 USER root
