@@ -1,6 +1,6 @@
 # OpenClaw Python
 
-基于 [ghcr.io/openclaw/openclaw](https://github.com/openclaw/openclaw/pkgs/container/openclaw/versions) 官方镜像，预装 Python3 和 requests 模块，用于支持 Python 技能。
+基于 [ghcr.io/openclaw/openclaw](https://github.com/openclaw/openclaw/pkgs/container/openclaw/versions) 官方镜像，预装 Python3 和 requests 和 ffmpeg 模块，用于支持 Python 技能、ffmpeg技能。
 
 ## 镜像地址
 
@@ -15,6 +15,7 @@ docker pull jimboo7339/openclaw-python:latest
 | Node.js | ✅ | ✅ |
 | Python3 | ❌ | ✅ |
 | requests 模块 | ❌ | ✅ |
+| ffmpeg | ❌ | ✅ |
 
 
 ## 自动构建
