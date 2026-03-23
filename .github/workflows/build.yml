@@ -73,7 +73,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .last_base_digest
-          key: base-digest-${{ runner.os }}-v1
+          key: base-digest-${{ runner.os }}-v1-${{ steps.check.outputs.base_digest }}
+          restore-keys: |
+            base-digest-${{ runner.os }}-v1-
 
       - name: Set up Docker Buildx
         if: steps.check.outputs.changed == 'true'
