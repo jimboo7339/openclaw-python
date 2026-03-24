@@ -25,13 +25,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Restore base image digest cache
-        id: cache-digest
-        uses: actions/cache@v3
+        id: cache-restore
+        uses: actions/cache/restore@v3
         with:
           path: .last_base_digest
-          key: base-digest-${{ runner.os }}-v1
+          key: base-digest-${{ runner.os }}-v1-
           restore-keys: |
-            base-digest-${{ runner.os }}-v1
+            base-digest-${{ runner.os }}-v1-
 
       - name: Check base image update
         id: check
@@ -70,12 +70,10 @@ jobs:
 
       - name: Save base image digest cache
         if: steps.check.outputs.changed == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache/save@v3
         with:
           path: .last_base_digest
           key: base-digest-${{ runner.os }}-v1-${{ steps.check.outputs.base_digest }}
-          restore-keys: |
-            base-digest-${{ runner.os }}-v1-
 
       - name: Set up Docker Buildx
         if: steps.check.outputs.changed == 'true'
